@@ -16,9 +16,9 @@ A modern agricultural commerce platform connecting farmers with factories and co
 
 - **Frontend**: React 18 + Vite + TypeScript
 - **Styling**: Tailwind CSS + Radix UI
-- **Backend**: Vercel Serverless Functions
-- **Database**: PostgreSQL (Supabase)
-- **ORM**: Drizzle ORM
+- **Backend**: Express.js / Vercel Serverless Functions
+- **Database**: MongoDB (Local or Atlas)
+- **ODM**: Mongoose
 
 ## 🚀 Getting Started
 
@@ -26,7 +26,18 @@ A modern agricultural commerce platform connecting farmers with factories and co
 
 - Node.js 18+
 - npm or yarn
-- Supabase account (for database)
+- MongoDB (local installation or MongoDB Atlas)
+
+### MongoDB Installation (Windows)
+
+1. Download MongoDB Community Server from [mongodb.com/try/download/community](https://www.mongodb.com/try/download/community)
+2. Run the installer and select "Complete" installation
+3. Choose "Install MongoDB as a Service"
+4. MongoDB will run automatically on `localhost:27017`
+
+Alternatively, use MongoDB Atlas (cloud):
+1. Create a free account at [mongodb.com/atlas](https://www.mongodb.com/atlas)
+2. Create a cluster and get your connection string
 
 ### Installation
 
@@ -44,15 +55,15 @@ npm install
 3. Set up environment variables
 ```bash
 cp .env.example .env
-# Edit .env with your Supabase database URL
+# Edit .env with your MongoDB connection URI
 ```
 
-4. Push database schema
-```bash
-npm run db:push
+Example `.env`:
+```
+MONGODB_URI=mongodb://localhost:27017/parth_agrotech
 ```
 
-5. Start development server
+4. Start development server
 ```bash
 npm run dev
 ```
@@ -63,7 +74,7 @@ Visit `http://localhost:5000` to see the app.
 
 ```
 ├── api/                 # Vercel serverless functions
-│   ├── _lib/           # Shared utilities
+│   ├── _lib/           # Shared utilities (db, schema, storage)
 │   ├── farmers.ts      # Farmer endpoints
 │   ├── factories.ts    # Factory endpoints
 │   ├── cold-storages.ts
@@ -76,7 +87,7 @@ Visit `http://localhost:5000` to see the app.
 │       ├── pages/      # Page components
 │       └── lib/        # Utilities & contexts
 ├── server/             # Express server (local dev)
-├── shared/             # Shared types & schemas
+├── shared/             # Shared types & Mongoose schemas
 └── vercel.json         # Vercel configuration
 ```
 
@@ -87,7 +98,7 @@ Visit `http://localhost:5000` to see the app.
 1. Push code to GitHub
 2. Connect repository to Vercel
 3. Add environment variable:
-   - `DATABASE_URL` - Your Supabase connection string
+   - `MONGODB_URI` - Your MongoDB connection string (use MongoDB Atlas for production)
 4. Deploy!
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
@@ -96,7 +107,7 @@ Visit `http://localhost:5000` to see the app.
 
 | Variable | Description |
 |----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string (Supabase) |
+| `MONGODB_URI` | MongoDB connection string (local or Atlas) |
 
 ## 🤝 Contributing
 

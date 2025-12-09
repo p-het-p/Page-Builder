@@ -1,112 +1,191 @@
-import { pgTable, text, varchar, integer, boolean, timestamp, real } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
+import mongoose, { Schema, Document } from 'mongoose';
+import { z } from 'zod';
 
-export const users = pgTable("users", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+// User Schema (for admin authentication)
+const userSchema = new Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: { type: String, default: 'admin' },
+}, { timestamps: true });
+
+// Farmer Schema
+const farmerSchema = new Schema({
+  name: { type: String, required: true },
+  phone: { type: String, required: true },
+  village: { type: String, required: true },
+  district: { type: String, required: true },
+  farmSize: { type: Number, required: true },
+  potatoVariety: { type: String, required: true },
+  status: { type: String, default: 'pending' },
+}, { timestamps: true });
+
+// Factory Schema
+const factorySchema = new Schema({
+  name: { type: String, required: true },
+  contactPerson: { type: String, required: true },
+  phone: { type: String, required: true },
+  email: { type: String, required: true },
+  location: { type: String, required: true },
+  monthlyRequirement: { type: Number, required: true },
+  status: { type: String, default: 'active' },
+}, { timestamps: true });
+
+// Cold Storage Schema
+const coldStorageSchema = new Schema({
+  name: { type: String, required: true },
+  location: { type: String, required: true },
+  capacity: { type: Number, required: true },
+  currentStock: { type: Number, default: 0 },
+  temperature: { type: String, default: '3.2' },
+  humidity: { type: String, default: '88' },
+  status: { type: String, default: 'online' },
+}, { timestamps: true });
+
+// Inventory Schema
+const inventorySchema = new Schema({
+  farmerId: { type: String, required: true },
+  storageId: { type: String, required: true },
+  quantity: { type: Number, required: true },
+  variety: { type: String, required: true },
+  grade: { type: String, required: true },
+  entryDate: { type: String, required: true },
+  status: { type: String, default: 'stored' },
+}, { timestamps: true });
+
+// Contact Inquiry Schema
+const contactInquirySchema = new Schema({
+  name: { type: String, required: true },
+  phone: { type: String, required: true },
+  email: { type: String },
+  type: { type: String, required: true },
+  message: { type: String, required: true },
+  status: { type: String, default: 'new' },
+}, { timestamps: true });
+
+// Models
+export const User = mongoose.models.User || mongoose.model('User', userSchema);
+export const Farmer = mongoose.models.Farmer || mongoose.model('Farmer', farmerSchema);
+export const Factory = mongoose.models.Factory || mongoose.model('Factory', factorySchema);
+export const ColdStorage = mongoose.models.ColdStorage || mongoose.model('ColdStorage', coldStorageSchema);
+export const Inventory = mongoose.models.Inventory || mongoose.model('Inventory', inventorySchema);
+export const ContactInquiry = mongoose.models.ContactInquiry || mongoose.model('ContactInquiry', contactInquirySchema);
+
+// Zod Schemas for Validation
+export const insertUserSchema = z.object({
+  username: z.string().min(1),
+  password: z.string().min(1),
 });
 
-export const farmers = pgTable("farmers", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  name: text("name").notNull(),
-  phone: text("phone").notNull(),
-  village: text("village").notNull(),
-  district: text("district").notNull(),
-  farmSize: real("farm_size").notNull(),
-  potatoVariety: text("potato_variety").notNull(),
-  status: text("status").notNull().default("pending"),
+export const insertFarmerSchema = z.object({
+  name: z.string().min(1),
+  phone: z.string().min(1),
+  village: z.string().min(1),
+  district: z.string().min(1),
+  farmSize: z.number().positive(),
+  potatoVariety: z.string().min(1),
 });
 
-export const factories = pgTable("factories", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  name: text("name").notNull(),
-  contactPerson: text("contact_person").notNull(),
-  phone: text("phone").notNull(),
-  email: text("email").notNull(),
-  location: text("location").notNull(),
-  monthlyRequirement: integer("monthly_requirement").notNull(),
-  status: text("status").notNull().default("active"),
+export const insertFactorySchema = z.object({
+  name: z.string().min(1),
+  contactPerson: z.string().min(1),
+  phone: z.string().min(1),
+  email: z.string().email(),
+  location: z.string().min(1),
+  monthlyRequirement: z.number().positive(),
 });
 
-export const coldStorages = pgTable("cold_storages", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  name: text("name").notNull(),
-  location: text("location").notNull(),
-  capacity: integer("capacity").notNull(),
-  currentStock: integer("current_stock").notNull().default(0),
-  temperature: text("temperature").notNull().default("3.2"),
-  humidity: text("humidity").notNull().default("88"),
-  status: text("status").notNull().default("online"),
+export const insertColdStorageSchema = z.object({
+  name: z.string().min(1),
+  location: z.string().min(1),
+  capacity: z.number().positive(),
+  temperature: z.string().optional(),
+  humidity: z.string().optional(),
 });
 
-export const inventory = pgTable("inventory", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  farmerId: varchar("farmer_id", { length: 36 }).notNull(),
-  storageId: varchar("storage_id", { length: 36 }).notNull(),
-  quantity: integer("quantity").notNull(),
-  variety: text("variety").notNull(),
-  grade: text("grade").notNull(),
-  entryDate: text("entry_date").notNull(),
-  status: text("status").notNull().default("stored"),
+export const insertInventorySchema = z.object({
+  farmerId: z.string().min(1),
+  storageId: z.string().min(1),
+  quantity: z.number().positive(),
+  variety: z.string().min(1),
+  grade: z.string().min(1),
+  entryDate: z.string().min(1),
 });
 
-export const contactInquiries = pgTable("contact_inquiries", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  name: text("name").notNull(),
-  phone: text("phone").notNull(),
-  email: text("email"),
-  type: text("type").notNull(),
-  message: text("message").notNull(),
-  status: text("status").notNull().default("new"),
+export const insertContactInquirySchema = z.object({
+  name: z.string().min(1),
+  phone: z.string().min(1),
+  email: z.string().email().optional(),
+  type: z.string().min(1),
+  message: z.string().min(1),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
-
-export const insertFarmerSchema = createInsertSchema(farmers).omit({
-  id: true,
-  status: true,
-});
-
-export const insertFactorySchema = createInsertSchema(factories).omit({
-  id: true,
-  status: true,
-});
-
-export const insertColdStorageSchema = createInsertSchema(coldStorages).omit({
-  id: true,
-  currentStock: true,
-  status: true,
-});
-
-export const insertInventorySchema = createInsertSchema(inventory).omit({
-  id: true,
-  status: true,
-});
-
-export const insertContactInquirySchema = createInsertSchema(contactInquiries).omit({
-  id: true,
-  status: true,
-});
-
+// TypeScript Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-
 export type InsertFarmer = z.infer<typeof insertFarmerSchema>;
-export type Farmer = typeof farmers.$inferSelect;
-
 export type InsertFactory = z.infer<typeof insertFactorySchema>;
-export type Factory = typeof factories.$inferSelect;
-
 export type InsertColdStorage = z.infer<typeof insertColdStorageSchema>;
-export type ColdStorage = typeof coldStorages.$inferSelect;
-
 export type InsertInventory = z.infer<typeof insertInventorySchema>;
-export type Inventory = typeof inventory.$inferSelect;
-
 export type InsertContactInquiry = z.infer<typeof insertContactInquirySchema>;
-export type ContactInquiry = typeof contactInquiries.$inferSelect;
+
+// Document types (for MongoDB documents with _id)
+export interface UserDoc extends Document {
+  username: string;
+  password: string;
+}
+
+export interface FarmerDoc extends Document {
+  name: string;
+  phone: string;
+  village: string;
+  district: string;
+  farmSize: number;
+  potatoVariety: string;
+  status: string;
+}
+
+export interface FactoryDoc extends Document {
+  name: string;
+  contactPerson: string;
+  phone: string;
+  email: string;
+  location: string;
+  monthlyRequirement: number;
+  status: string;
+}
+
+export interface ColdStorageDoc extends Document {
+  name: string;
+  location: string;
+  capacity: number;
+  currentStock: number;
+  temperature: string;
+  humidity: string;
+  status: string;
+}
+
+export interface InventoryDoc extends Document {
+  farmerId: string;
+  storageId: string;
+  quantity: number;
+  variety: string;
+  grade: string;
+  entryDate: string;
+  status: string;
+}
+
+export interface ContactInquiryDoc extends Document {
+  name: string;
+  phone: string;
+  email?: string;
+  type: string;
+  message: string;
+  status: string;
+}
+
+// Re-export types for compatibility (using id instead of _id)
+export type User = UserDoc & { id: string };
+export type Farmer = FarmerDoc & { id: string };
+export type Factory = FactoryDoc & { id: string };
+export type ColdStorage = ColdStorageDoc & { id: string };
+export type Inventory = InventoryDoc & { id: string };
+export type ContactInquiry = ContactInquiryDoc & { id: string };

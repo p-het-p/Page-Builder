@@ -339,8 +339,8 @@ export default function Backbone() {
                     id="investors-header"
                     ref={(el) => observe(el)}
                     className={`text-center mb-20 transition-all duration-1000 ${visibleElements.has('investors-header')
-                            ? 'opacity-100 translate-y-0'
-                            : 'opacity-0 translate-y-20'
+                        ? 'opacity-100 translate-y-0'
+                        : 'opacity-0 translate-y-20'
                         }`}
                 >
                     <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -362,8 +362,8 @@ export default function Backbone() {
                             id={investor.id}
                             ref={(el) => observe(el)}
                             className={`transition-all duration-700 ${visibleElements.has(investor.id)
-                                    ? 'opacity-100 translate-y-0'
-                                    : 'opacity-0 translate-y-20'
+                                ? 'opacity-100 translate-y-0'
+                                : 'opacity-0 translate-y-20'
                                 }`}
                             style={{ transitionDelay: `${index * 100}ms` }}
                             onMouseEnter={() => setActiveInvestor(investor)}
@@ -450,8 +450,8 @@ export default function Backbone() {
                     id="gratitude-section"
                     ref={(el) => observe(el)}
                     className={`container mx-auto px-6 text-center transition-all duration-1000 ${visibleElements.has('gratitude-section')
-                            ? 'opacity-100 scale-100'
-                            : 'opacity-0 scale-95'
+                        ? 'opacity-100 scale-100'
+                        : 'opacity-0 scale-95'
                         }`}
                 >
                     <div className="inline-block p-12 bg-gradient-to-br from-green-500/10 to-lime-400/5 border border-green-500/20 rounded-2xl max-w-3xl backdrop-blur-sm relative overflow-hidden group hover:border-green-500/40 transition-all duration-500">

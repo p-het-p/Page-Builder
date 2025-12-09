@@ -1,13 +1,22 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
-import pg from 'pg';
-import * as schema from './schema';
+import mongoose from 'mongoose';
 
-if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL environment variable is required');
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/parth_agrotech';
+
+let isConnected = false;
+
+export async function connectDB() {
+    if (isConnected) {
+        return;
+    }
+
+    try {
+        await mongoose.connect(MONGODB_URI);
+        isConnected = true;
+        console.log('✅ MongoDB connected successfully');
+    } catch (error) {
+        console.error('❌ MongoDB connection error:', error);
+        throw error;
+    }
 }
 
-const pool = new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
-});
-
-export const db = drizzle(pool, { schema });
+export { mongoose };

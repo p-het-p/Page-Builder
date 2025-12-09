@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import {
   ArrowLeft, Users, Factory, Server, MessageSquare,
   Plus, Trash2, Loader2, RefreshCw, Thermometer,
-  MapPin, Phone, Package, Settings
+  MapPin, Phone, Package, Settings, LogOut
 } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
+import { useAuth } from '@/lib/auth-context';
 import { Logo } from '@/components/landing/Logo';
 import { LanguageToggle } from '@/components/landing/LanguageToggle';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -24,9 +25,16 @@ import type { Farmer, Factory as FactoryType, ColdStorage, ContactInquiry } from
 export default function AdminDashboard() {
   const { lang } = useLanguage();
   const { toast } = useToast();
+  const { user, logout } = useAuth();
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState('farmers');
   const [showAddStorage, setShowAddStorage] = useState(false);
   const [newStorage, setNewStorage] = useState({ name: '', location: '', capacity: '', temperature: '3.2', humidity: '88' });
+
+  const handleLogout = async () => {
+    await logout();
+    setLocation('/');
+  };
 
   const { data: farmers, isLoading: farmersLoading, refetch: refetchFarmers } = useQuery<Farmer[]>({
     queryKey: ['/api/farmers']
@@ -113,8 +121,18 @@ export default function AdminDashboard() {
             <LanguageToggle />
             <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
               <Settings className="w-3 h-3 mr-1" />
-              ADMIN
+              {user?.username || 'ADMIN'}
             </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="text-muted-foreground hover:text-foreground hover:bg-red-500/10"
+              data-testid="button-logout"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              {lang === 'en' ? 'Logout' : 'લૉગઆઉટ'}
+            </Button>
           </div>
         </div>
       </nav>

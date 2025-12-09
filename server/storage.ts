@@ -1,280 +1,243 @@
 import {
-  type User,
+  User,
+  Farmer,
+  Factory,
+  ColdStorage,
+  Inventory,
+  ContactInquiry,
   type InsertUser,
-  type Farmer,
   type InsertFarmer,
-  type Factory,
   type InsertFactory,
-  type ColdStorage,
   type InsertColdStorage,
-  type Inventory,
   type InsertInventory,
-  type ContactInquiry,
   type InsertContactInquiry,
 } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { connectDB } from "./db";
 
-export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-
-  getFarmers(): Promise<Farmer[]>;
-  getFarmer(id: string): Promise<Farmer | undefined>;
-  createFarmer(farmer: InsertFarmer): Promise<Farmer>;
-  updateFarmerStatus(id: string, status: string): Promise<Farmer | undefined>;
-  deleteFarmer(id: string): Promise<boolean>;
-
-  getFactories(): Promise<Factory[]>;
-  getFactory(id: string): Promise<Factory | undefined>;
-  createFactory(factory: InsertFactory): Promise<Factory>;
-  updateFactory(id: string, updates: Partial<Factory>): Promise<Factory | undefined>;
-  deleteFactory(id: string): Promise<boolean>;
-
-  getColdStorages(): Promise<ColdStorage[]>;
-  getColdStorage(id: string): Promise<ColdStorage | undefined>;
-  createColdStorage(storage: InsertColdStorage): Promise<ColdStorage>;
-  updateColdStorage(id: string, updates: Partial<ColdStorage>): Promise<ColdStorage | undefined>;
-  deleteColdStorage(id: string): Promise<boolean>;
-
-  getInventory(): Promise<Inventory[]>;
-  getInventoryByStorage(storageId: string): Promise<Inventory[]>;
-  getInventoryByFarmer(farmerId: string): Promise<Inventory[]>;
-  createInventory(item: InsertInventory): Promise<Inventory>;
-  updateInventory(id: string, updates: Partial<Inventory>): Promise<Inventory | undefined>;
-  deleteInventory(id: string): Promise<boolean>;
-
-  getContactInquiries(): Promise<ContactInquiry[]>;
-  createContactInquiry(inquiry: InsertContactInquiry): Promise<ContactInquiry>;
-  updateContactInquiryStatus(id: string, status: string): Promise<ContactInquiry | undefined>;
+// Helper to convert MongoDB document to plain object with id
+function toPlainObject<T>(doc: any): T & { id: string } {
+  if (!doc) return doc;
+  const obj = doc.toObject ? doc.toObject() : doc;
+  return {
+    ...obj,
+    id: obj._id?.toString() || obj.id,
+  };
 }
 
-import { db } from "./db";
-import { eq } from "drizzle-orm";
-import {
-  users,
-  farmers,
-  factories,
-  coldStorages,
-  inventory,
-  contactInquiries
-} from "@shared/schema";
+function toPlainArray<T>(docs: any[]): (T & { id: string })[] {
+  return docs.map(doc => toPlainObject<T>(doc));
+}
+
+export interface IStorage {
+  getUser(id: string): Promise<any | undefined>;
+  getUserByUsername(username: string): Promise<any | undefined>;
+  createUser(user: InsertUser): Promise<any>;
+
+  getFarmers(): Promise<any[]>;
+  getFarmer(id: string): Promise<any | undefined>;
+  createFarmer(farmer: InsertFarmer): Promise<any>;
+  updateFarmerStatus(id: string, status: string): Promise<any | undefined>;
+  deleteFarmer(id: string): Promise<boolean>;
+
+  getFactories(): Promise<any[]>;
+  getFactory(id: string): Promise<any | undefined>;
+  createFactory(factory: InsertFactory): Promise<any>;
+  updateFactory(id: string, updates: Partial<any>): Promise<any | undefined>;
+  deleteFactory(id: string): Promise<boolean>;
+
+  getColdStorages(): Promise<any[]>;
+  getColdStorage(id: string): Promise<any | undefined>;
+  createColdStorage(storage: InsertColdStorage): Promise<any>;
+  updateColdStorage(id: string, updates: Partial<any>): Promise<any | undefined>;
+  deleteColdStorage(id: string): Promise<boolean>;
+
+  getInventory(): Promise<any[]>;
+  getInventoryByStorage(storageId: string): Promise<any[]>;
+  getInventoryByFarmer(farmerId: string): Promise<any[]>;
+  createInventory(item: InsertInventory): Promise<any>;
+  updateInventory(id: string, updates: Partial<any>): Promise<any | undefined>;
+  deleteInventory(id: string): Promise<boolean>;
+
+  getContactInquiries(): Promise<any[]>;
+  createContactInquiry(inquiry: InsertContactInquiry): Promise<any>;
+  updateContactInquiryStatus(id: string, status: string): Promise<any | undefined>;
+}
 
 export class DatabaseStorage implements IStorage {
-  async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+  private async ensureConnection() {
+    await connectDB();
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+  async getUser(id: string): Promise<any | undefined> {
+    await this.ensureConnection();
+    const user = await User.findById(id);
+    return user ? toPlainObject(user) : undefined;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const [user] = await db
-      .insert(users)
-      .values({ ...insertUser, id })
-      .returning();
-    return user;
+  async getUserByUsername(username: string): Promise<any | undefined> {
+    await this.ensureConnection();
+    const user = await User.findOne({ username });
+    return user ? toPlainObject(user) : undefined;
   }
 
-  async getFarmers(): Promise<Farmer[]> {
-    return db.select().from(farmers);
+  async createUser(insertUser: InsertUser): Promise<any> {
+    await this.ensureConnection();
+    const user = await User.create(insertUser);
+    return toPlainObject(user);
   }
 
-  async getFarmer(id: string): Promise<Farmer | undefined> {
-    const [farmer] = await db.select().from(farmers).where(eq(farmers.id, id));
-    return farmer;
+  async getFarmers(): Promise<any[]> {
+    await this.ensureConnection();
+    const farmers = await Farmer.find();
+    return toPlainArray(farmers);
   }
 
-  async createFarmer(insertFarmer: InsertFarmer): Promise<Farmer> {
-    const id = randomUUID();
-    const [farmer] = await db
-      .insert(farmers)
-      .values({ ...insertFarmer, id, status: "pending" })
-      .returning();
-    return farmer;
+  async getFarmer(id: string): Promise<any | undefined> {
+    await this.ensureConnection();
+    const farmer = await Farmer.findById(id);
+    return farmer ? toPlainObject(farmer) : undefined;
   }
 
-  async updateFarmerStatus(id: string, status: string): Promise<Farmer | undefined> {
-    const [farmer] = await db
-      .update(farmers)
-      .set({ status })
-      .where(eq(farmers.id, id))
-      .returning();
-    return farmer;
+  async createFarmer(insertFarmer: InsertFarmer): Promise<any> {
+    await this.ensureConnection();
+    const farmer = await Farmer.create({ ...insertFarmer, status: "pending" });
+    return toPlainObject(farmer);
+  }
+
+  async updateFarmerStatus(id: string, status: string): Promise<any | undefined> {
+    await this.ensureConnection();
+    const farmer = await Farmer.findByIdAndUpdate(id, { status }, { new: true });
+    return farmer ? toPlainObject(farmer) : undefined;
   }
 
   async deleteFarmer(id: string): Promise<boolean> {
-    const [farmer] = await db
-      .delete(farmers)
-      .where(eq(farmers.id, id))
-      .returning();
-    return !!farmer;
+    await this.ensureConnection();
+    const result = await Farmer.findByIdAndDelete(id);
+    return !!result;
   }
 
-  async getFactories(): Promise<Factory[]> {
-    return db.select().from(factories);
+  async getFactories(): Promise<any[]> {
+    await this.ensureConnection();
+    const factories = await Factory.find();
+    return toPlainArray(factories);
   }
 
-  async getFactory(id: string): Promise<Factory | undefined> {
-    const [factory] = await db.select().from(factories).where(eq(factories.id, id));
-    return factory;
+  async getFactory(id: string): Promise<any | undefined> {
+    await this.ensureConnection();
+    const factory = await Factory.findById(id);
+    return factory ? toPlainObject(factory) : undefined;
   }
 
-  async createFactory(insertFactory: InsertFactory): Promise<Factory> {
-    const id = randomUUID();
-    const [factory] = await db
-      .insert(factories)
-      .values({ ...insertFactory, id, status: "active" })
-      .returning();
-    return factory;
+  async createFactory(insertFactory: InsertFactory): Promise<any> {
+    await this.ensureConnection();
+    const factory = await Factory.create({ ...insertFactory, status: "active" });
+    return toPlainObject(factory);
   }
 
-  async updateFactory(id: string, updates: Partial<Factory>): Promise<Factory | undefined> {
-    const [factory] = await db
-      .update(factories)
-      .set(updates)
-      .where(eq(factories.id, id))
-      .returning();
-    return factory;
+  async updateFactory(id: string, updates: Partial<any>): Promise<any | undefined> {
+    await this.ensureConnection();
+    const factory = await Factory.findByIdAndUpdate(id, updates, { new: true });
+    return factory ? toPlainObject(factory) : undefined;
   }
 
   async deleteFactory(id: string): Promise<boolean> {
-    const [factory] = await db
-      .delete(factories)
-      .where(eq(factories.id, id))
-      .returning();
-    return !!factory;
+    await this.ensureConnection();
+    const result = await Factory.findByIdAndDelete(id);
+    return !!result;
   }
 
-  async getColdStorages(): Promise<ColdStorage[]> {
-    return db.select().from(coldStorages);
+  async getColdStorages(): Promise<any[]> {
+    await this.ensureConnection();
+    const storages = await ColdStorage.find();
+    return toPlainArray(storages);
   }
 
-  async getColdStorage(id: string): Promise<ColdStorage | undefined> {
-    const [storage] = await db
-      .select()
-      .from(coldStorages)
-      .where(eq(coldStorages.id, id));
-    return storage;
+  async getColdStorage(id: string): Promise<any | undefined> {
+    await this.ensureConnection();
+    const storage = await ColdStorage.findById(id);
+    return storage ? toPlainObject(storage) : undefined;
   }
 
-  async createColdStorage(insertStorage: InsertColdStorage): Promise<ColdStorage> {
-    const id = randomUUID();
-    const [storage] = await db
-      .insert(coldStorages)
-      .values({
-        ...insertStorage,
-        id,
-        currentStock: 0,
-        status: "online",
-        temperature: insertStorage.temperature ?? "3.2",
-        humidity: insertStorage.humidity ?? "88",
-      })
-      .returning();
-    return storage;
+  async createColdStorage(insertStorage: InsertColdStorage): Promise<any> {
+    await this.ensureConnection();
+    const storage = await ColdStorage.create({
+      ...insertStorage,
+      currentStock: 0,
+      status: "online",
+      temperature: insertStorage.temperature ?? "3.2",
+      humidity: insertStorage.humidity ?? "88",
+    });
+    return toPlainObject(storage);
   }
 
-  async updateColdStorage(
-    id: string,
-    updates: Partial<ColdStorage>
-  ): Promise<ColdStorage | undefined> {
-    const [storage] = await db
-      .update(coldStorages)
-      .set(updates)
-      .where(eq(coldStorages.id, id))
-      .returning();
-    return storage;
+  async updateColdStorage(id: string, updates: Partial<any>): Promise<any | undefined> {
+    await this.ensureConnection();
+    const storage = await ColdStorage.findByIdAndUpdate(id, updates, { new: true });
+    return storage ? toPlainObject(storage) : undefined;
   }
 
   async deleteColdStorage(id: string): Promise<boolean> {
-    const [storage] = await db
-      .delete(coldStorages)
-      .where(eq(coldStorages.id, id))
-      .returning();
-    return !!storage;
+    await this.ensureConnection();
+    const result = await ColdStorage.findByIdAndDelete(id);
+    return !!result;
   }
 
-  async getInventory(): Promise<Inventory[]> {
-    return db.select().from(inventory);
+  async getInventory(): Promise<any[]> {
+    await this.ensureConnection();
+    const items = await Inventory.find();
+    return toPlainArray(items);
   }
 
-  async getInventoryByStorage(storageId: string): Promise<Inventory[]> {
-    return db
-      .select()
-      .from(inventory)
-      .where(eq(inventory.storageId, storageId));
+  async getInventoryByStorage(storageId: string): Promise<any[]> {
+    await this.ensureConnection();
+    const items = await Inventory.find({ storageId });
+    return toPlainArray(items);
   }
 
-  async getInventoryByFarmer(farmerId: string): Promise<Inventory[]> {
-    return db
-      .select()
-      .from(inventory)
-      .where(eq(inventory.farmerId, farmerId));
+  async getInventoryByFarmer(farmerId: string): Promise<any[]> {
+    await this.ensureConnection();
+    const items = await Inventory.find({ farmerId });
+    return toPlainArray(items);
   }
 
-  async createInventory(insertInventory: InsertInventory): Promise<Inventory> {
-    const id = randomUUID();
-    const [item] = await db
-      .insert(inventory)
-      .values({ ...insertInventory, id, status: "stored" })
-      .returning();
-    return item;
+  async createInventory(insertInventory: InsertInventory): Promise<any> {
+    await this.ensureConnection();
+    const item = await Inventory.create({ ...insertInventory, status: "stored" });
+    return toPlainObject(item);
   }
 
-  async updateInventory(
-    id: string,
-    updates: Partial<Inventory>
-  ): Promise<Inventory | undefined> {
-    const [item] = await db
-      .update(inventory)
-      .set(updates)
-      .where(eq(inventory.id, id))
-      .returning();
-    return item;
+  async updateInventory(id: string, updates: Partial<any>): Promise<any | undefined> {
+    await this.ensureConnection();
+    const item = await Inventory.findByIdAndUpdate(id, updates, { new: true });
+    return item ? toPlainObject(item) : undefined;
   }
 
   async deleteInventory(id: string): Promise<boolean> {
-    const [item] = await db
-      .delete(inventory)
-      .where(eq(inventory.id, id))
-      .returning();
-    return !!item;
+    await this.ensureConnection();
+    const result = await Inventory.findByIdAndDelete(id);
+    return !!result;
   }
 
-  async getContactInquiries(): Promise<ContactInquiry[]> {
-    return db.select().from(contactInquiries);
+  async getContactInquiries(): Promise<any[]> {
+    await this.ensureConnection();
+    const inquiries = await ContactInquiry.find();
+    return toPlainArray(inquiries);
   }
 
-  async createContactInquiry(
-    insertInquiry: InsertContactInquiry
-  ): Promise<ContactInquiry> {
-    const id = randomUUID();
-    const [inquiry] = await db
-      .insert(contactInquiries)
-      .values({
-        ...insertInquiry,
-        id,
-        status: "new",
-        email: insertInquiry.email ?? null,
-      })
-      .returning();
-    return inquiry;
+  async createContactInquiry(insertInquiry: InsertContactInquiry): Promise<any> {
+    await this.ensureConnection();
+    const inquiry = await ContactInquiry.create({
+      ...insertInquiry,
+      status: "new",
+      email: insertInquiry.email ?? null,
+    });
+    return toPlainObject(inquiry);
   }
 
-  async updateContactInquiryStatus(
-    id: string,
-    status: string
-  ): Promise<ContactInquiry | undefined> {
-    const [inquiry] = await db
-      .update(contactInquiries)
-      .set({ status })
-      .where(eq(contactInquiries.id, id))
-      .returning();
-    return inquiry;
+  async updateContactInquiryStatus(id: string, status: string): Promise<any | undefined> {
+    await this.ensureConnection();
+    const inquiry = await ContactInquiry.findByIdAndUpdate(id, { status }, { new: true });
+    return inquiry ? toPlainObject(inquiry) : undefined;
   }
 }
 
